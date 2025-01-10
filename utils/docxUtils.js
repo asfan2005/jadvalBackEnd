@@ -31,30 +31,53 @@ function createTestTable(test) {
             bottom: { style: BorderStyle.SINGLE, size: 1 },
             left: { style: BorderStyle.SINGLE, size: 1 },
             right: { style: BorderStyle.SINGLE, size: 1 },
-            insideHorizontal: { style: BorderStyle.SINGLE, size: 1 }
+            insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
+            insideVertical: { style: BorderStyle.SINGLE, size: 1 }
         },
         rows: [
-            createTableRow(test.question),
-            createTableRow(test.correctAnswer),
-            createTableRow(test.wrongAnswer1),
-            createTableRow(test.wrongAnswer2),
-            createTableRow(test.wrongAnswer3),
-        ],
-    });
-}
-
-function createTableRow(content) {
-    return new TableRow({
-        children: [
-            new TableCell({
-                width: {
-                    size: 100,
-                    type: WidthType.PERCENTAGE,
-                },
-                children: [new Paragraph({ 
-                    text: content,
-                    spacing: { before: 120, after: 120 }
-                })],
+            // Savol qatori
+            new TableRow({
+                children: [
+                    new TableCell({
+                        width: {
+                            size: 100,
+                            type: WidthType.PERCENTAGE,
+                        },
+                        children: [new Paragraph({ 
+                            text: `${test.question}`,
+                            spacing: { before: 120, after: 120 }
+                        })],
+                    }),
+                ],
+            }),
+            // Javoblar qatori - har bir javob alohida qatorda
+            new TableRow({
+                children: [
+                    new TableCell({
+                        children: [new Paragraph({ text: test.correctAnswer })],
+                    }),
+                ],
+            }),
+            new TableRow({
+                children: [
+                    new TableCell({
+                        children: [new Paragraph({ text: test.wrongAnswer1 })],
+                    }),
+                ],
+            }),
+            new TableRow({
+                children: [
+                    new TableCell({
+                        children: [new Paragraph({ text: test.wrongAnswer2 })],
+                    }),
+                ],
+            }),
+            new TableRow({
+                children: [
+                    new TableCell({
+                        children: [new Paragraph({ text: test.wrongAnswer3 })],
+                    }),
+                ],
             }),
         ],
     });
@@ -62,44 +85,70 @@ function createTableRow(content) {
 
 function parseTests(text) {
     const tests = [];
-    const normalizedText = text
+    const lines = text
         .replace(/\r\n/g, '\n')
-        .replace(/\*\*/g, '')
-        .replace(/\?/g, '')
-        .replace(/[^\w\s\.\)a-zA-Z0-9]/g, '');
-
-    const lines = normalizedText
         .split('\n')
-        .map(line => line.trim()
-            .replace(/\*\*/g, '')
-            .replace(/\?/g, '')
-            .replace(/[^\w\s\.\)a-zA-Z0-9]/g, ''))
+        .map(line => line.trim())
         .filter(line => line);
 
     let currentTest = null;
 
     for (let i = 0; i < lines.length; i++) {
-        const line = lines[i]
-            .replace(/\*\*/g, '')
-            .replace(/\?/g, '')
-            .replace(/[^\w\s\.\)a-zA-Z0-9]/g, '')
-            .trim();
+        const line = lines[i].trim();
         
-        if (/^\d+[\.\)]/.test(line)) {
+        // Test raqami va savolini aniqlash
+        if (/^\d+\./.test(line)) {
             if (currentTest) {
                 tests.push(currentTest);
             }
-            currentTest = {
-                question: line.replace(/^\d+[\.\)]/, '').trim(),
+            
+            // Savolni va javoblarni ajratish
+            let questionText = line.replace(/^\d+\.\s*/, '');
+            let answers = {
                 correctAnswer: '',
                 wrongAnswer1: '',
                 wrongAnswer2: '',
                 wrongAnswer3: ''
             };
+            
+            // Agar savol ichida a), b), c), d) javoblari bo'lsa
+            if (questionText.includes('a)')) {
+                const parts = questionText.split(/([a-d]\))/);
+                // Faqat savol qismini olish
+                questionText = parts[0].trim();
+                
+                // Javoblarni ajratib olish
+                for (let j = 1; j < parts.length; j += 2) {
+                    const answerType = parts[j][0]; // a, b, c yoki d
+                    const answerText = parts[j + 1].trim();
+                    
+                    switch(answerType) {
+                        case 'a':
+                            answers.correctAnswer = answerText;
+                            break;
+                        case 'b':
+                            answers.wrongAnswer1 = answerText;
+                            break;
+                        case 'c':
+                            answers.wrongAnswer2 = answerText;
+                            break;
+                        case 'd':
+                            answers.wrongAnswer3 = answerText;
+                            break;
+                    }
+                }
+            }
+            
+            currentTest = {
+                number: line.match(/^\d+/)[0],
+                question: questionText,
+                ...answers
+            };
         }
-        else if (currentTest && /^[A-Da-d][\.\)]/.test(line)) {
-            const answer = line.replace(/^[A-Da-d][\.\)]/, '').trim();
-            const answerType = line.charAt(0).toLowerCase();
+        // Agar alohida qatorda javoblar bo'lsa
+        else if (currentTest && /^[a-d]\)/.test(line)) {
+            const answerType = line.charAt(0);
+            const answer = line.substring(2).trim();
             
             switch(answerType) {
                 case 'a':

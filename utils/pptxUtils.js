@@ -4,7 +4,7 @@ async function createEnhancedPptxPresentation(lines) {
     const pres = new PptxGenJS();
     
     pres.layout = 'LAYOUT_WIDE';
-    const LINES_PER_SLIDE = 10;
+    const LINES_PER_SLIDE = 7;
     let slideNumber = 1;
 
     for (let i = 0; i < lines.length; i += LINES_PER_SLIDE) {
@@ -16,7 +16,7 @@ async function createEnhancedPptxPresentation(lines) {
         slideLines.forEach((line, index) => {
             slide.addText(line, {
                 x: 0.5,
-                y: 0.3 + (index * 0.7),
+                y: 1 + (index * 0.8),
                 w: '90%',
                 h: 0.5,
                 fontSize: 19,
